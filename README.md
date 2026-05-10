@@ -109,42 +109,72 @@ traveloop/
             ├── EditTrip.jsx
             └── ...
 ```
-⚙️ Installation
-Clone the Repository
+## ⚙️ Installation
+
+### Clone the Repository
+
+```bash
 git clone https://github.com/your-username/traveloop.git
 cd traveloop
-Frontend Setup
+```
+
+### Frontend Setup
+
+```bash
 cd frontend
 npm install
 npm run dev
-Backend Setup
+```
+
+### Backend Setup
+
+```bash
 cd backend
 npm install
 npm run dev
+```
 
-🔑 Environment Variables
+## 🔑 Environment Variables
 
-Create a .env file inside the backend folder.
+Create a `.env` file inside the backend folder.
 
+```env
 DATABASE_URL=your_postgresql_database_url
 JWT_SECRET=your_secret_key
-ADMIN_EMAILS=admin_email@gmail.com
 PORT=5000
+```
 
-🗄️ Prisma Setup
+## 🗄️ Prisma Setup
+
+```bash
 npx prisma migrate dev
 npx prisma generate
+```
 
-🎯 Goals of the Project
-Simplify travel planning
-Improve itinerary organization
-Provide budget visibility
-Create a smooth and responsive user experience
-Build a scalable full-stack application
+## 🎯 Goals of the Project
 
-📌 Future Improvements
-AI-based trip recommendations
-Real-time weather integration
-Google Maps integration
-Hotel & flight APIs
-Collaborative group trip planning
+- Simplify the process of travel planning
+- Help users organize multi-city trips easily
+- Provide a clean and interactive itinerary experience
+- Allow users to track estimated travel budgets
+- Create a responsive and user-friendly interface
+- Improve trip management and accessibility
+- Build a scalable full-stack web application
+- Encourage collaborative and smarter travel planning
+
+---
+
+## 📌 Future Improvements
+
+- AI-powered travel recommendations
+- Real-time weather integration
+- Google Maps and location services
+- Hotel and flight booking integration
+- Collaborative group trip planning
+- Expense splitting between travelers
+- Offline itinerary access
+- Mobile application support
+- Smart budget optimization
+- Personalized activity suggestions
+- Real-time chat and sharing features
+- Multi-language support
