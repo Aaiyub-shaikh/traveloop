@@ -121,14 +121,16 @@ Backend Setup
 cd backend
 npm install
 npm run dev
+
 🔑 Environment Variables
 
 Create a .env file inside the backend folder.
 
 DATABASE_URL=your_postgresql_database_url
 JWT_SECRET=your_secret_key
-ADMIN_EMAILS=email@gmail.com
+ADMIN_EMAILS=admin_email@gmail.com
 PORT=5000
+
 🗄️ Prisma Setup
 npx prisma migrate dev
 npx prisma generate
