@@ -1,5 +1,16 @@
+function envAdminEmails() {
+  return (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 /** Safe JSON for clients — never includes password hash */
 export function serializePublicUser(u) {
+  const emails = envAdminEmails();
+  const envGrant = emails.length > 0 && u.email && emails.includes(String(u.email).toLowerCase());
+  const isAdmin = !!(u.isAdmin || envGrant);
+
   return {
     id: u.id,
     name: u.name,
@@ -12,6 +23,7 @@ export function serializePublicUser(u) {
     notificationsEnabled: u.notificationsEnabled ?? true,
     notifyTripReminders: u.notifyTripReminders ?? true,
     notifyWeeklyDigest: u.notifyWeeklyDigest ?? false,
+    isAdmin,
     createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : u.createdAt,
   };
 }

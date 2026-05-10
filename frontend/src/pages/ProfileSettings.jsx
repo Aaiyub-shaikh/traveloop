@@ -183,26 +183,25 @@ export default function ProfileSettings() {
 
   async function handlePhotoPick(ev) {
     const file = ev.target.files?.[0];
-    ev.target.value = "";
-    if (!file || !file.type.startsWith("image/")) {
+    const input = ev.target;
+    if (!file) return;
+
+    const looksImage =
+      (file.type && file.type.startsWith("image/")) || /\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name);
+    if (!looksImage) {
       toast.error("Choose an image file");
+      input.value = "";
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
       toast.error("Image must be 2MB or smaller");
+      input.value = "";
       return;
     }
+
     if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
-  }
 
-  async function uploadPendingPhoto() {
-    const input = fileRef.current;
-    const file = input?.files?.[0];
-    if (!file) {
-      toast.error("Select a photo first");
-      return;
-    }
     const fd = new FormData();
     fd.append("photo", file);
     setUploadingPhoto(true);
@@ -210,13 +209,14 @@ export default function ProfileSettings() {
       const data = await userApi.uploadPhoto(fd);
       setProfile((p) => (p ? { ...p, profilePhoto: data.profilePhoto } : p));
       setPreviewUrl(null);
-      if (input) input.value = "";
       await refreshUser();
       toast.success("Profile photo updated");
     } catch (e) {
       toast.error(e.message || "Upload failed");
+      setPreviewUrl(null);
     } finally {
       setUploadingPhoto(false);
+      input.value = "";
     }
   }
 
@@ -376,19 +376,32 @@ export default function ProfileSettings() {
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-3xl text-slate-400">👤</div>
                     )}
-                  </div>
-                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handlePhotoPick} />
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button type="button" size="sm" variant="secondary" className="gap-2" onClick={() => fileRef.current?.click()}>
-                      <Camera className="h-4 w-4" />
-                      Choose photo
-                    </Button>
-                    {previewUrl && (
-                      <Button type="button" size="sm" disabled={uploadingPhoto} onClick={uploadPendingPhoto}>
-                        {uploadingPhoto ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
-                      </Button>
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+                        <Loader2 className="h-9 w-9 animate-spin text-white" />
+                      </div>
                     )}
-                    {profile?.profilePhoto && !previewUrl && (
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoPick}
+                  />
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="gap-2"
+                      disabled={uploadingPhoto}
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Camera className="h-4 w-4" />
+                      {uploadingPhoto ? "Uploading…" : "Change photo"}
+                    </Button>
+                    {profile?.profilePhoto && !uploadingPhoto && (
                       <Button type="button" size="sm" variant="ghost" onClick={removePhoto}>
                         Remove
                       </Button>

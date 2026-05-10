@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 import {
   Briefcase,
   CalendarRange,
@@ -28,6 +29,9 @@ const links = [
 
 /** Desktop sidebar + shared nav definitions */
 export function Sidebar({ onNavigate }) {
+  const { user } = useAuth();
+  const visibleLinks = links.filter((l) => l.to !== "/admin" || user?.isAdmin);
+
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
       isActive
@@ -42,7 +46,7 @@ export function Sidebar({ onNavigate }) {
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Trip workspace</p>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {links.map(({ to, label, icon: Icon }) => (
+        {visibleLinks.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={linkClass} onClick={onNavigate}>
             <Icon className="h-4 w-4 shrink-0 opacity-80" />
             {label}

@@ -16,6 +16,8 @@ import publicItineraryRoutes from "./routes/publicItinerary.js";
 import packingRoutes from "./routes/packing.js";
 import userRoutes from "./routes/user.js";
 import tripNotesRoutes from "./routes/tripNotes.js";
+import adminRoutes from "./routes/admin.js";
+import { adminMiddleware } from "./middleware/admin.js";
 import { warmupWorldCitiesIndex } from "./lib/worldCitiesSearch.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,6 +52,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/admin", authMiddleware, adminMiddleware, adminRoutes);
 app.use("/api/public", publicItineraryRoutes);
 app.use("/api/packing", packingRoutes);
 app.use("/api/trips/:tripId/notes", authMiddleware, tripNotesRoutes);

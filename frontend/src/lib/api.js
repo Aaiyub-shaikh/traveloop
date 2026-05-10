@@ -78,6 +78,10 @@ export async function apiUpload(path, formData) {
   return data;
 }
 
+export const adminApi = {
+  analytics: () => apiFetch("/api/admin/analytics"),
+};
+
 export const userApi = {
   getProfile: () => apiFetch("/api/user/profile"),
   updateProfile: (body) => apiFetch("/api/user/profile", { method: "PUT", body: JSON.stringify(body) }),

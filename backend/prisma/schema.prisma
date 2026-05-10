@@ -23,6 +23,7 @@ model User {
   notifyTripReminders  Boolean @default(true)
   /// Weekly summary emails (honored when notificationsEnabled)
   notifyWeeklyDigest   Boolean @default(false)
+  isAdmin      Boolean        @default(false)
   createdAt    DateTime       @default(now())
   trips        Trip[]
   packingItems PackingItem[]

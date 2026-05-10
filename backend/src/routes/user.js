@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import fs from "fs";
+import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
@@ -17,30 +17,17 @@ router.use(authMiddleware);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadDir = path.join(__dirname, "../../uploads/avatars");
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    try {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    } catch {
-      /* exists */
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    const safe = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext) ? ext : ".jpg";
-    cb(null, `${req.user.sub}-${Date.now()}-${randomBytes(4).toString("hex")}${safe}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) {
-      return cb(new Error("Only JPEG, PNG, WebP, or GIF images are allowed"));
+    const okType = typeof file.mimetype === "string" && file.mimetype.startsWith("image/");
+    const name = (file.originalname || "").toLowerCase();
+    const okName = /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(name);
+    if (okType || okName) {
+      return cb(null, true);
     }
-    cb(null, true);
+    return cb(new Error("Please upload an image file"));
   },
 });
 
@@ -153,11 +140,18 @@ router.post("/profile/photo", (req, res) => {
     if (err) {
       return res.status(400).json({ message: err.message || "Upload failed" });
     }
-    if (!req.file) {
+    if (!req.file?.buffer) {
       return res.status(400).json({ message: "No file uploaded" });
     }
     try {
-      const publicPath = `/uploads/avatars/${req.file.filename}`;
+      await mkdir(uploadDir, { recursive: true });
+      const ext = path.extname(req.file.originalname || "").toLowerCase();
+      const safeExt = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext) ? ext : ".jpg";
+      const filename = `${req.user.sub}-${Date.now()}-${randomBytes(4).toString("hex")}${safeExt}`;
+      const diskPath = path.join(uploadDir, filename);
+      await writeFile(diskPath, req.file.buffer);
+
+      const publicPath = `/uploads/avatars/${filename}`;
       const user = await prisma.user.update({
         where: { id: req.user.sub },
         data: { profilePhoto: publicPath },
