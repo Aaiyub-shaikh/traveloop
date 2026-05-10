@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Menu, Plane, User } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useTheme } from "../../contexts/ThemeContext.jsx";
+import { mediaUrl } from "../../lib/mediaUrl.js";
 import { Button } from "../ui/Button.jsx";
 
 export function Navbar({ onMenuClick, showMenu }) {
@@ -53,10 +54,23 @@ export function Navbar({ onMenuClick, showMenu }) {
           </button>
           {isAuthenticated ? (
             <>
-              <span className="hidden max-w-[140px] truncate text-sm text-slate-600 dark:text-slate-400 sm:inline">{user?.name}</span>
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => navigate("/profile")}>
+              <button
+                type="button"
+                onClick={() => navigate("/profile")}
+                className="hidden items-center gap-2 rounded-xl py-1 sm:flex"
+                title="Profile"
+              >
+                {user?.profilePhoto ? (
+                  <img src={mediaUrl(user.profilePhoto)} alt="" className="h-8 w-8 rounded-lg object-cover ring-2 ring-white/50 dark:ring-slate-700" />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/15 text-brand-700 dark:text-brand-300">
+                    <User className="h-4 w-4" />
+                  </span>
+                )}
+                <span className="max-w-[120px] truncate text-sm text-slate-600 dark:text-slate-400">{user?.name}</span>
+              </button>
+              <Button variant="ghost" size="sm" className="sm:hidden" onClick={() => navigate("/profile")}>
                 <User className="h-4 w-4" />
-                Profile
               </Button>
               <Button variant="secondary" size="sm" onClick={() => { logout(); navigate("/"); }}>
                 <LogOut className="h-4 w-4" />

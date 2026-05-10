@@ -9,7 +9,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Map as MapIcon } from "lucide-react";
+import { Map as MapIcon, Share2 } from "lucide-react";
 import { itineraryApi, tripsApi } from "../lib/api.js";
 import { formatTripRange, toDateInputValue } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
@@ -20,6 +20,7 @@ import { PageLoader } from "../components/ui/Spinner.jsx";
 import { DayDivider } from "../components/itinerary/DayDivider.jsx";
 import { SortableStopRow } from "../components/itinerary/SortableStopRow.jsx";
 import { AddStopForm } from "../components/itinerary/AddStopForm.jsx";
+import { ShareTripModal } from "../components/trips/ShareTripModal.jsx";
 
 function dayKey(iso) {
   return new Date(iso).toLocaleDateString("en-CA");
@@ -47,6 +48,7 @@ export default function ItineraryBuilder() {
   const [addStopErr, setAddStopErr] = useState("");
   const [activityDraft, setActivityDraft] = useState({});
   const [reordering, setReordering] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -243,6 +245,10 @@ export default function ItineraryBuilder() {
         subtitle={subtitle}
         actions={
           <>
+            <Button variant="secondary" size="sm" type="button" className="gap-2" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
             <Link to={`/trips/${trip.id}`}>
               <Button variant="ghost" size="sm" type="button">
                 Trip summary
@@ -328,6 +334,8 @@ export default function ItineraryBuilder() {
           />
         </div>
       )}
+
+      <ShareTripModal tripId={trip.id} tripTitle={trip.title} open={shareOpen} onClose={() => setShareOpen(false)} />
     </>
   );
 }

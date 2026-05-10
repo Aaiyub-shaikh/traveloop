@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Plane } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { Button } from "../components/ui/Button.jsx";
@@ -12,7 +12,10 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || "/dashboard";
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const fromRaw = location.state?.from || (nextParam && nextParam.startsWith("/") ? nextParam : null) || "/dashboard";
+  const from = fromRaw.startsWith("/") ? fromRaw : "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

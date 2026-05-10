@@ -1,7 +1,10 @@
+import { randomBytes } from "crypto";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { assertTripOwned } from "../lib/itineraryGuards.js";
+import { duplicateTripForUser } from "../lib/duplicateTrip.js";
 import { serializeItinerary } from "../lib/serializeItinerary.js";
+import { serializeTrip } from "../lib/serializeTrip.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
@@ -59,19 +62,6 @@ function validateTripBody(body, partial = false) {
   }
 
   return { errors, title: title?.trim(), description, coverImage, start, end };
-}
-
-function serializeTrip(t) {
-  return {
-    id: t.id,
-    userId: t.userId,
-    title: t.title,
-    description: t.description,
-    startDate: t.startDate.toISOString(),
-    endDate: t.endDate.toISOString(),
-    coverImage: t.coverImage,
-    createdAt: t.createdAt.toISOString(),
-  };
 }
 
 /** GET /api/trips?q=&filter=all|upcoming|past|current */
@@ -189,6 +179,101 @@ router.post("/:tripId/itinerary", async (req, res) => {
   } catch (err) {
     console.error("create itinerary:", err);
     res.status(500).json({ message: "Could not create itinerary" });
+  }
+});
+
+function makeShareToken() {
+  return randomBytes(24).toString("base64url");
+}
+
+/** GET /api/trips/:tripId/share — { share: { token, path, createdAt } | null } */
+router.get("/:tripId/share", async (req, res) => {
+  try {
+    const trip = await assertTripOwned(req.user.sub, req.params.tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    const link = await prisma.tripShareLink.findUnique({ where: { tripId: trip.id } });
+    if (!link) {
+      return res.json({ share: null });
+    }
+    res.json({
+      share: {
+        token: link.token,
+        path: `/shared/${link.token}`,
+        createdAt: link.createdAt.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("get share:", err);
+    res.status(500).json({ message: "Could not load share link" });
+  }
+});
+
+/** POST /api/trips/:tripId/share — body: { regenerate?: boolean } */
+router.post("/:tripId/share", async (req, res) => {
+  try {
+    const trip = await assertTripOwned(req.user.sub, req.params.tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    const regenerate = !!req.body?.regenerate;
+    let link = await prisma.tripShareLink.findUnique({ where: { tripId: trip.id } });
+
+    if (!link) {
+      link = await prisma.tripShareLink.create({
+        data: { tripId: trip.id, token: makeShareToken() },
+      });
+    } else if (regenerate) {
+      link = await prisma.tripShareLink.update({
+        where: { tripId: trip.id },
+        data: { token: makeShareToken() },
+      });
+    }
+
+    res.json({
+      share: {
+        token: link.token,
+        path: `/shared/${link.token}`,
+        createdAt: link.createdAt.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("create share:", err);
+    res.status(500).json({ message: "Could not create share link" });
+  }
+});
+
+/** DELETE /api/trips/:tripId/share */
+router.delete("/:tripId/share", async (req, res) => {
+  try {
+    const trip = await assertTripOwned(req.user.sub, req.params.tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    await prisma.tripShareLink.deleteMany({ where: { tripId: trip.id } });
+    res.status(204).send();
+  } catch (err) {
+    console.error("delete share:", err);
+    res.status(500).json({ message: "Could not disable sharing" });
+  }
+});
+
+/** POST /api/trips/:tripId/duplicate — clone trip + itinerary for same user */
+router.post("/:tripId/duplicate", async (req, res) => {
+  try {
+    const trip = await assertTripOwned(req.user.sub, req.params.tripId);
+    if (!trip) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    const result = await duplicateTripForUser(req.user.sub, trip.id);
+    if (result.error) {
+      return res.status(404).json({ message: "Trip not found" });
+    }
+    res.status(201).json(result);
+  } catch (err) {
+    console.error("duplicate trip:", err);
+    res.status(500).json({ message: "Could not duplicate trip" });
   }
 });
 

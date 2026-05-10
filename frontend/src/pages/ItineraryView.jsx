@@ -1,12 +1,13 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { CalendarDays, PenLine } from "lucide-react";
+import { CalendarDays, PenLine, Share2 } from "lucide-react";
 import { itineraryApi, tripsApi } from "../lib/api.js";
 import { formatTripRange } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { PageLoader } from "../components/ui/Spinner.jsx";
+import { ShareTripModal } from "../components/trips/ShareTripModal.jsx";
 import { DayDivider } from "../components/itinerary/DayDivider.jsx";
 
 function dayKey(iso) {
@@ -20,6 +21,7 @@ export default function ItineraryView() {
   const [itinerary, setItinerary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shareOpen, setShareOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,12 +61,18 @@ export default function ItineraryView() {
         title={title}
         subtitle={trip?.description?.trim() ? `${subtitle} · ${trip.description.trim().slice(0, 80)}${trip.description.length > 80 ? "…" : ""}` : subtitle}
         actions={
-          <Link to={`/itinerary/${tripId}/build`}>
-            <Button variant="secondary" className="gap-2">
-              <PenLine className="h-4 w-4" />
-              Edit in builder
+          <>
+            <Button variant="secondary" type="button" className="gap-2" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-4 w-4" />
+              Share
             </Button>
-          </Link>
+            <Link to={`/itinerary/${tripId}/build`}>
+              <Button variant="secondary" className="gap-2">
+                <PenLine className="h-4 w-4" />
+                Edit in builder
+              </Button>
+            </Link>
+          </>
         }
       />
 
@@ -153,6 +161,8 @@ export default function ItineraryView() {
           })}
         </div>
       )}
+
+      {trip && <ShareTripModal tripId={trip.id} tripTitle={trip.title} open={shareOpen} onClose={() => setShareOpen(false)} />}
     </>
   );
 }

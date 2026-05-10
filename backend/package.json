@@ -23,7 +23,8 @@
     "country-state-city": "^3.2.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
     "prisma": "^6.2.0"

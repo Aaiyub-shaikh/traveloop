@@ -50,6 +50,65 @@ export const authApi = {
   me: () => apiFetch("/api/auth/me"),
 };
 
+/** Multipart upload (do not set Content-Type) */
+export async function apiUpload(path, formData) {
+  const headers = {};
+  const token = getStoredToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { message: text || "Invalid response" };
+  }
+  if (!res.ok) {
+    const err = new Error(data?.message || res.statusText || "Upload failed");
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+export const userApi = {
+  getProfile: () => apiFetch("/api/user/profile"),
+  updateProfile: (body) => apiFetch("/api/user/profile", { method: "PUT", body: JSON.stringify(body) }),
+  uploadPhoto: (formData) => apiUpload("/api/user/profile/photo", formData),
+  updatePreferences: (body) => apiFetch("/api/user/preferences", { method: "PUT", body: JSON.stringify(body) }),
+  changePassword: (body) => apiFetch("/api/user/password", { method: "PUT", body: JSON.stringify(body) }),
+  deleteAccount: (body) => apiFetch("/api/user/account", { method: "DELETE", body: JSON.stringify(body) }),
+  savedDestinations: () => apiFetch("/api/user/saved-destinations"),
+  addSavedDestination: (body) => apiFetch("/api/user/saved-destinations", { method: "POST", body: JSON.stringify(body) }),
+  removeSavedDestination: (id) =>
+    apiFetch(`/api/user/saved-destinations/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
+export const tripNotesApi = {
+  list: (tripId, params = {}) => {
+    const q = new URLSearchParams();
+    if (params.day) q.set("day", params.day);
+    const qs = q.toString();
+    return apiFetch(`/api/trips/${encodeURIComponent(tripId)}/notes${qs ? `?${qs}` : ""}`);
+  },
+  create: (tripId, body) =>
+    apiFetch(`/api/trips/${encodeURIComponent(tripId)}/notes`, { method: "POST", body: JSON.stringify(body) }),
+  update: (tripId, noteId, body) =>
+    apiFetch(`/api/trips/${encodeURIComponent(tripId)}/notes/${encodeURIComponent(noteId)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  remove: (tripId, noteId) =>
+    apiFetch(`/api/trips/${encodeURIComponent(tripId)}/notes/${encodeURIComponent(noteId)}`, { method: "DELETE" }),
+};
+
 /** Trip CRUD — requires Bearer token (stored after login) */
 export const tripsApi = {
   list: (params = {}) => {
@@ -63,6 +122,33 @@ export const tripsApi = {
   create: (body) => apiFetch("/api/trips", { method: "POST", body: JSON.stringify(body) }),
   update: (id, body) => apiFetch(`/api/trips/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) }),
   remove: (id) => apiFetch(`/api/trips/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
+
+/** Public share link management + duplicate (auth) */
+export const shareApi = {
+  get: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/share`),
+  create: (tripId, body = {}) =>
+    apiFetch(`/api/trips/${encodeURIComponent(tripId)}/share`, { method: "POST", body: JSON.stringify(body) }),
+  remove: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/share`, { method: "DELETE" }),
+  duplicateTrip: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/duplicate`, { method: "POST" }),
+};
+
+/** Shared itinerary (GET is public; copy requires auth) */
+export const publicShareApi = {
+  getItinerary: (token) => apiFetch(`/api/public/itinerary/${encodeURIComponent(token)}`),
+  copyToMyTrips: (token) =>
+    apiFetch(`/api/public/itinerary/${encodeURIComponent(token)}/copy`, { method: "POST" }),
+};
+
+export const packingApi = {
+  list: (tripId) => {
+    const q = tripId ? `?tripId=${encodeURIComponent(tripId)}` : "";
+    return apiFetch(`/api/packing/items${q}`);
+  },
+  create: (body) => apiFetch("/api/packing/items", { method: "POST", body: JSON.stringify(body) }),
+  update: (id, body) =>
+    apiFetch(`/api/packing/items/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) }),
+  remove: (id) => apiFetch(`/api/packing/items/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
 export const citiesApi = {

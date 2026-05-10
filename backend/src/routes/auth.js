@@ -2,6 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
+import { serializePublicUser } from "../lib/serializeUser.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
@@ -39,9 +40,10 @@ router.post("/register", async (req, res) => {
     });
 
     const token = signToken({ sub: user.id, email: user.email });
+    const full = await prisma.user.findUnique({ where: { id: user.id } });
     res.status(201).json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt },
+      user: serializePublicUser(full),
     });
   } catch (err) {
     console.error("register error:", err);
@@ -66,9 +68,10 @@ router.post("/login", async (req, res) => {
     }
 
     const token = signToken({ sub: user.id, email: user.email });
+    const full = await prisma.user.findUnique({ where: { id: user.id } });
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt },
+      user: serializePublicUser(full),
     });
   } catch (err) {
     console.error("login error:", err);
@@ -81,12 +84,11 @@ router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.sub },
-      select: { id: true, name: true, email: true, createdAt: true },
     });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json({ user });
+    res.json({ user: serializePublicUser(user) });
   } catch (err) {
     console.error("me error:", err);
     res.status(500).json({ message: "Could not load profile" });

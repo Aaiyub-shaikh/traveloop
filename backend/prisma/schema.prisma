@@ -8,28 +8,109 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  trips     Trip[]
+  id           String         @id @default(uuid())
+  name         String
+  email        String         @unique
+  password     String
+  profilePhoto String         @default("")
+  bio          String         @default("")
+  language     String         @default("en")
+  theme        String         @default("system")
+  currency     String         @default("USD")
+  /// Master switch; when false, clients should treat all notification channels as off
+  notificationsEnabled Boolean @default(true)
+  /// Trip / planning-style alerts (honored when notificationsEnabled)
+  notifyTripReminders  Boolean @default(true)
+  /// Weekly summary emails (honored when notificationsEnabled)
+  notifyWeeklyDigest   Boolean @default(false)
+  createdAt    DateTime       @default(now())
+  trips        Trip[]
+  packingItems PackingItem[]
+  savedDestinations SavedDestination[]
+  tripNotes    TripNote[]
 }
 
 model Trip {
-  id          String     @id @default(uuid())
+  id          String          @id @default(uuid())
   userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
-  description String     @default("")
+  description String          @default("")
   startDate   DateTime
   endDate     DateTime
-  coverImage  String     @default("")
-  createdAt   DateTime     @default(now())
+  coverImage  String          @default("")
+  createdAt   DateTime        @default(now())
   itinerary   Itinerary?
   budget      Budget?
+  shareLink   TripShareLink?
+  packingItems PackingItem[]
+  notes        TripNote[]
 
   @@index([userId])
+}
+
+model SavedDestination {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityName  String
+  country   String
+  imageUrl  String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Journal entry scoped to a trip and calendar day
+model TripNote {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Calendar date (UTC noon stored to reduce TZ drift)
+  dayDate   DateTime
+  title     String   @default("")
+  body      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tripId])
+  @@index([userId])
+  @@index([tripId, dayDate])
+}
+
+/// One public share link per trip (token in URL)
+model TripShareLink {
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  createdAt DateTime @default(now())
+}
+
+enum PackingCategory {
+  clothing
+  electronics
+  documents
+  essentials
+}
+
+model PackingItem {
+  id        String          @id @default(uuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tripId    String?
+  trip      Trip?           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  label     String
+  category  PackingCategory
+  packed    Boolean         @default(false)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([tripId])
 }
 
 /// One budget per trip — expenses roll up to category breakdown (mock-friendly totals)

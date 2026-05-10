@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { CalendarDays, MapPin, Pencil, Trash2, Compass } from "lucide-react";
-import { tripsApi } from "../lib/api.js";
+import { CalendarDays, ClipboardList, Copy, MapPin, NotebookPen, Pencil, Share2, Trash2, Compass } from "lucide-react";
+import { shareApi, tripsApi } from "../lib/api.js";
 import { formatTripDate, formatTripRange } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { PageLoader } from "../components/ui/Spinner.jsx";
+import { ShareTripModal } from "../components/trips/ShareTripModal.jsx";
 
 /** View Trip Summary — load one trip; edit / delete */
 export default function TripSummary() {
@@ -16,6 +17,8 @@ export default function TripSummary() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,6 +37,20 @@ export default function TripSummary() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleDuplicate() {
+    if (!trip) return;
+    setDuplicating(true);
+    setError("");
+    try {
+      const data = await shareApi.duplicateTrip(trip.id);
+      navigate(`/trips/${data.trip.id}`, { replace: false });
+    } catch (e) {
+      setError(e.message || "Could not duplicate trip");
+    } finally {
+      setDuplicating(false);
+    }
+  }
 
   async function handleDelete() {
     if (!trip || !window.confirm(`Delete “${trip.title}”? This cannot be undone.`)) return;
@@ -85,12 +102,32 @@ export default function TripSummary() {
         subtitle={range}
         actions={
           <>
+            <Button variant="secondary" type="button" className="gap-2" onClick={() => setShareOpen(true)}>
+              <Share2 className="h-4 w-4" />
+              Share
+            </Button>
             <Link to={`/itinerary/${trip.id}`}>
               <Button variant="secondary" type="button" className="gap-2">
                 <Compass className="h-4 w-4" />
                 Itinerary
               </Button>
             </Link>
+            <Link to={`/packing?tripId=${encodeURIComponent(trip.id)}`}>
+              <Button variant="secondary" type="button" className="gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Packing
+              </Button>
+            </Link>
+            <Link to={`/notes?tripId=${encodeURIComponent(trip.id)}`}>
+              <Button variant="secondary" type="button" className="gap-2">
+                <NotebookPen className="h-4 w-4" />
+                Notes
+              </Button>
+            </Link>
+            <Button variant="secondary" type="button" className="gap-2" disabled={duplicating} onClick={handleDuplicate}>
+              <Copy className="h-4 w-4" />
+              {duplicating ? "Duplicating…" : "Duplicate"}
+            </Button>
             <Link to={`/trips/${trip.id}/edit`}>
               <Button variant="secondary" type="button" className="gap-2">
                 <Pencil className="h-4 w-4" />
@@ -146,6 +183,8 @@ export default function TripSummary() {
           </Card>
         </div>
       </div>
+
+      <ShareTripModal tripId={trip.id} tripTitle={trip.title} open={shareOpen} onClose={() => setShareOpen(false)} />
     </>
   );
 }

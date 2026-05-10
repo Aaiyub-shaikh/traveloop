@@ -9,7 +9,6 @@ import {
   NotebookPen,
   Plane,
   Search,
-  Share2,
   Shield,
   Sparkles,
   TentTree,
@@ -24,7 +23,6 @@ const links = [
   { to: "/budget", label: "Budget", icon: Coins },
   { to: "/packing", label: "Packing", icon: ClipboardList },
   { to: "/notes", label: "Notes / Journal", icon: NotebookPen },
-  { to: "/shared/demo", label: "Shared Itinerary", icon: Share2 },
   { to: "/admin", label: "Admin", icon: Shield },
 ];
 
