@@ -1,4 +1,3 @@
-// Prisma schema — users only for this phase
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,4 +13,101 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+  trips     Trip[]
+}
+
+model Trip {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String     @default("")
+  startDate   DateTime
+  endDate     DateTime
+  coverImage  String     @default("")
+  createdAt   DateTime     @default(now())
+  itinerary   Itinerary?
+  budget      Budget?
+
+  @@index([userId])
+}
+
+/// One budget per trip — expenses roll up to category breakdown (mock-friendly totals)
+model Budget {
+  id               String    @id @default(uuid())
+  tripId           String    @unique
+  trip             Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  currency         String    @default("USD")
+  totalLimit       Float?
+  alertAtPercent   Float     @default(90)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  expenses         Expense[]
+
+  @@index([tripId])
+}
+
+model Expense {
+  id        String   @id @default(uuid())
+  budgetId  String
+  budget    Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category  String // hotel | transport | food | activities
+  amount    Float
+  label     String
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([budgetId])
+}
+
+/// One itinerary per trip — holds ordered stops
+model Itinerary {
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stops     Stop[]
+
+  @@index([tripId])
+}
+
+/// Saved cities — seeded favorites + auto-created from worldwide catalog picks
+model City {
+  id          String @id @default(uuid())
+  worldKey    String? @unique // e.g. PT||Lisbon — matches country-state-city picks
+  name        String
+  country     String
+  countryCode String @default("")
+  stateCode   String @default("")
+  tagline     String @default("")
+  emoji       String @default("📍")
+  stops       Stop[]
+}
+
+model Stop {
+  id          String    @id @default(uuid())
+  itineraryId String
+  itinerary   Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  cityId      String
+  city        City      @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  sortOrder   Int       @default(0)
+  startDate   DateTime
+  endDate     DateTime
+  notes       String    @default("")
+  activities  Activity[]
+
+  @@index([itineraryId])
+}
+
+model Activity {
+  id          String  @id @default(uuid())
+  stopId      String
+  stop        Stop    @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  title       String
+  description String  @default("")
+  sortOrder   Int     @default(0)
+  startsAt    String? // optional time label e.g. "09:30"
+
+  @@index([stopId])
 }

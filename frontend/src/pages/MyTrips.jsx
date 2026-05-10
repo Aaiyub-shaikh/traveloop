@@ -1,22 +1,59 @@
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CalendarRange, ChevronRight } from "lucide-react";
+import { Filter, Search } from "lucide-react";
+import { tripsApi } from "../lib/api.js";
+import { useDebouncedValue } from "../hooks/useDebouncedValue.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
-import { Badge } from "../components/ui/Badge.jsx";
+import { Input } from "../components/ui/Input.jsx";
 import { EmptyState } from "../components/ui/EmptyState.jsx";
-import { mockTrips } from "../data/mockData.js";
+import { PageLoader } from "../components/ui/Spinner.jsx";
+import { TripCard } from "../components/trips/TripCard.jsx";
 
-/** List trips from mock JSON */
+const FILTERS = [
+  { value: "all", label: "All trips" },
+  { value: "upcoming", label: "Upcoming" },
+  { value: "current", label: "In progress" },
+  { value: "past", label: "Past" },
+];
+
+/** My Trips — list + search/filters from API */
 export default function MyTrips() {
   const navigate = useNavigate();
-  const showEmpty = mockTrips.length === 0;
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const searchDebounced = useDebouncedValue(searchInput, 400);
+  const [filter, setFilter] = useState("all");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await tripsApi.list({
+        q: searchDebounced.trim() || undefined,
+        filter: filter === "all" ? undefined : filter,
+      });
+      setTrips(data.trips || []);
+    } catch (e) {
+      setError(e.message || "Could not load trips");
+      setTrips([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchDebounced, filter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <>
       <PageHeader
         title="My trips"
-        subtitle="Card grid fed by dummy JSON — swap with API later."
+        subtitle="Search and filter trips saved to your account."
         actions={
           <Link to="/trips/create">
             <Button>New trip</Button>
@@ -24,30 +61,57 @@ export default function MyTrips() {
         }
       />
 
-      {showEmpty ? (
-        <EmptyState title="No trips yet" description="Create a trip to populate this view." actionLabel="Create trip" onAction={() => navigate("/trips/create")} />
+      <Card className="mb-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              className="pl-10"
+              placeholder="Search title or description…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search trips"
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
+            <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <Filter className="h-4 w-4 shrink-0" />
+              <label htmlFor="trip-filter" className="sr-only">
+                Filter
+              </label>
+            </span>
+            <select
+              id="trip-filter"
+              className="w-full min-w-[180px] rounded-xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm text-slate-900 outline-none ring-brand-500/30 focus:ring-2 dark:border-slate-600 dark:bg-slate-900/70 dark:text-white sm:w-auto"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              {FILTERS.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-500">Search updates after you pause typing. Filters apply together.</p>
+      </Card>
+
+      {loading ? (
+        <PageLoader message="Loading trips..." />
+      ) : error ? (
+        <Card>
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+          <Button type="button" className="mt-4" onClick={() => load()}>
+            Retry
+          </Button>
+        </Card>
+      ) : trips.length === 0 ? (
+        <EmptyState title="No trips match" description="Try another search or create a new trip." actionLabel="Create trip" onAction={() => navigate("/trips/create")} />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {mockTrips.map((trip) => (
-            <Link key={trip.id} to={`/itinerary/${trip.id}`} className="group block">
-              <Card className="h-full overflow-hidden p-0 transition group-hover:shadow-glass-lg">
-                <div className={`h-28 bg-gradient-to-br ${trip.coverGradient}`} />
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-display font-semibold text-slate-900 dark:text-white">{trip.title}</h3>
-                    <Badge tone={trip.status === "completed" ? "neutral" : "brand"}>{trip.status}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{trip.destination}</p>
-                  <p className="mt-4 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <CalendarRange className="h-3.5 w-3.5" />
-                    {trip.startDate} → {trip.endDate}
-                  </p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-600 dark:text-brand-400">
-                    Open itinerary <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </span>
-                </div>
-              </Card>
-            </Link>
+          {trips.map((trip) => (
+            <TripCard key={trip.id} trip={trip} />
           ))}
         </div>
       )}

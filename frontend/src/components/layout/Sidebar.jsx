@@ -56,19 +56,19 @@ export function Sidebar({ onNavigate }) {
           <Sparkles className="mt-0.5 h-4 w-4 text-brand-500" />
           <div>
             <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">Itinerary builder</p>
-            <NavLink to="/itinerary/trip-1/build" className="mt-1 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline dark:text-brand-400" onClick={onNavigate}>
+            <NavLink to="/trips" className="mt-1 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline dark:text-brand-400" onClick={onNavigate}>
               <TentTree className="h-3 w-3" />
-              Open builder (demo)
+              Pick a trip first
             </NavLink>
           </div>
         </div>
         <NavLink
-          to="/itinerary/trip-1"
+          to="/trips"
           className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/70"
           onClick={onNavigate}
         >
           <Briefcase className="h-4 w-4" />
-          View itinerary (demo)
+          My trips → itinerary
         </NavLink>
       </div>
     </aside>

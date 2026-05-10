@@ -1,6 +1,6 @@
 # Traveloop
 
-Full-stack travel planning UI shell with PostgreSQL-backed user accounts (JWT + bcrypt). Trip planning features use mock data until backend APIs are added.
+Full-stack travel planning app with PostgreSQL-backed users (JWT + bcrypt) and **trip CRUD** tied to each account.
 
 ## Prerequisites
 
@@ -17,37 +17,41 @@ traveloop/
 │   ├── .env.example
 │   ├── package.json
 │   ├── prisma/
-│   │   └── schema.prisma        # User model only (this phase)
+│   │   └── schema.prisma        # User, Trip, Itinerary, Budget, Expense, …
 │   └── src/
-│       ├── server.js            # Express app + CORS
+│       ├── server.js
 │       ├── lib/
-│       │   └── prisma.js        # Prisma singleton
+│       │   └── prisma.js
 │       ├── middleware/
-│       │   └── auth.js          # JWT Bearer middleware
+│       │   └── auth.js
+│       ├── data/
+│       │   ├── exploreCities.json
+│       │   └── exploreActivities.json
 │       └── routes/
-│           └── auth.js          # register, login, /me
+│           ├── auth.js
+│           ├── trips.js
+│           ├── explore.js       # mock city/activity search
+│           └── tripBudget.js    # budget + expenses
 └── frontend/
     ├── .env.example
-    ├── index.html
-    ├── package.json
-    ├── postcss.config.js
-    ├── tailwind.config.js
-    ├── vite.config.js           # Dev proxy → backend /api
-    ├── public/
+    ├── vite.config.js
     └── src/
-        ├── App.jsx              # Routes
-        ├── main.jsx
-        ├── index.css
-        ├── contexts/            # Auth + theme (Context API)
-        ├── data/
-        │   └── mockData.js      # Dummy trips, cities, activities
+        ├── App.jsx
         ├── lib/
-        │   └── api.js           # fetch helper + auth endpoints
+        │   ├── api.js           # authApi + tripsApi
+        │   └── tripUtils.js
+        ├── hooks/
+        │   └── useDebouncedValue.js
         ├── components/
-        │   ├── layout/          # Navbar, Sidebar, AppShell
-        │   ├── ui/              # Button, Card, Input, etc.
-        │   └── ProtectedRoute.jsx
-        └── pages/               # All screens (UI placeholders + forms)
+        │   ├── trips/
+        │   │   └── TripCard.jsx
+        │   └── ...
+        └── pages/
+            ├── CreateTrip.jsx
+            ├── MyTrips.jsx
+            ├── TripSummary.jsx
+            ├── EditTrip.jsx
+            └── ...
 ```
 
 ## Setup
@@ -74,12 +78,11 @@ API listens on `http://localhost:5000` by default. Health check: `GET http://loc
 ```powershell
 cd frontend
 copy .env.example .env
-# Optional: VITE_API_URL if not using Vite proxy
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The Vite dev server proxies `/api` to the backend (`vite.config.js`).
+Open `http://localhost:5173`. The Vite dev server proxies `/api` to the backend.
 
 ## Commands
 
@@ -93,13 +96,55 @@ Open `http://localhost:5173`. The Vite dev server proxies `/api` to the backend 
 | `frontend`| `npm run build`| Production bundle                |
 | `frontend`| `npm run preview` | Preview production build       |
 
-## API (this phase)
+## API
+
+### Auth
 
 - `POST /api/auth/register` — `{ name, email, password }`
 - `POST /api/auth/login` — `{ email, password }`
-- `GET /api/auth/me` — Bearer JWT, returns user
+- `GET /api/auth/me` — Bearer JWT
+
+### Trips (Bearer JWT required)
+
+- `POST /api/trips` — `{ title, description?, startDate, endDate, coverImage? }` (ISO dates)
+- `GET /api/trips` — optional `?q=` search, `?filter=all|upcoming|past|current`
+- `GET /api/trips/:id`
+- `PUT /api/trips/:id` — same body shape as create
+- `DELETE /api/trips/:id` — `204` empty body
+
+### Itinerary & cities (Bearer JWT required)
+
+- `GET /api/cities/search?q=&limit=` — worldwide substring search (`country-state-city` dataset; **min. 2 chars** on `q`)
+- `GET /api/cities` — cities stored in DB (featured seed + auto-created when you add stops)
+- `GET /api/trips/:tripId/itinerary` — `{ itinerary }` or `{ itinerary: null }`
+- `POST /api/trips/:tripId/itinerary` — create (one per trip)
+- `POST /api/itineraries/:itineraryId/stops` — `{ cityId?, worldCity?, startDate, endDate, notes? }` — either `cityId` or `worldCity: { name, countryCode, stateCode? }` from `/api/cities/search`
+- `PUT /api/itineraries/:itineraryId/stops/reorder` — `{ orderedStopIds: string[] }`
+- `PUT /api/stops/:stopId` — partial `{ cityId?, worldCity?, startDate?, endDate?, notes? }`
+- `DELETE /api/stops/:stopId` — `204`
+- `POST /api/stops/:stopId/activities` — `{ title, description?, startsAt? }`
+- `PUT /api/stops/:stopId/activities/reorder` — `{ orderedActivityIds: string[] }`
+- `PUT /api/activities/:activityId` — partial fields
+- `DELETE /api/activities/:activityId` — `204`
+
+Seed featured cities: `cd backend && npm run db:seed` (after `prisma db push`). Any other place from search is created in the DB on first use (`worldKey`). The `country-state-city` npm package is GPL-3.0 — review license terms for your distribution model.
+
+### Explore — mock catalog (Bearer JWT, static JSON, no paid APIs)
+
+- `GET /api/explore/cities/meta` — `{ countries, regions }` for filters
+- `GET /api/explore/cities?q=&country=&region=` — card data includes `imageUrl` (picsum.photos seeds)
+- `GET /api/explore/activities/meta` — `{ categories, costTiers }`
+- `GET /api/explore/activities?q=&category=&costTier=`
+
+### Budget (Bearer JWT)
+
+- `GET /api/trips/:tripId/budget` — `{ budget, expenses, summary }` — creates budget if missing; **summary** includes `pieData`, `barData`, `avgPerDay`, `alerts`
+- `PUT /api/trips/:tripId/budget` — `{ currency?, totalLimit?, alertAtPercent? }`
+- `POST /api/trips/:tripId/budget/expenses` — `{ category: hotel|transport|food|activities, amount, label, notes? }`
+- `DELETE /api/trips/:tripId/budget/expenses/:expenseId`
 
 ## Notes
 
-- Shared itinerary route `/shared/:token` is public (no login) for preview links.
-- All other app routes under the shell require a valid JWT stored in `localStorage` as `traveloop_token`.
+- Shared itinerary `/shared/:token` stays public (preview).
+- Other shell routes require JWT in `localStorage` as `traveloop_token`.
+- After schema changes, run `npx prisma db push` again.

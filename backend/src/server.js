@@ -2,6 +2,14 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
+import tripRoutes from "./routes/trips.js";
+import citiesRoutes from "./routes/cities.js";
+import itinerariesRoutes from "./routes/itineraries.js";
+import stopsRoutes from "./routes/stops.js";
+import activitiesRoutes from "./routes/activities.js";
+import exploreRoutes from "./routes/explore.js";
+import tripBudgetRoutes from "./routes/tripBudget.js";
+import { warmupWorldCitiesIndex } from "./lib/worldCitiesSearch.js";
 
 // Fail fast when required env vars are missing (clearer than cryptic runtime errors)
 const requiredEnv = ["DATABASE_URL", "JWT_SECRET"];
@@ -31,6 +39,13 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/trips", tripBudgetRoutes);
+app.use("/api/trips", tripRoutes);
+app.use("/api/explore", exploreRoutes);
+app.use("/api/cities", citiesRoutes);
+app.use("/api/itineraries", itinerariesRoutes);
+app.use("/api/stops", stopsRoutes);
+app.use("/api/activities", activitiesRoutes);
 
 // 404 for unknown API routes
 app.use("/api", (_req, res) => {
@@ -39,4 +54,5 @@ app.use("/api", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Traveloop API listening on http://localhost:${PORT}`);
+  setImmediate(() => warmupWorldCitiesIndex());
 });

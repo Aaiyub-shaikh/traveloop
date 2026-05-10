@@ -6,6 +6,7 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import Budget from "./pages/Budget.jsx";
 import CitySearch from "./pages/CitySearch.jsx";
 import CreateTrip from "./pages/CreateTrip.jsx";
+import EditTrip from "./pages/EditTrip.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ItineraryBuilder from "./pages/ItineraryBuilder.jsx";
 import ItineraryView from "./pages/ItineraryView.jsx";
@@ -17,6 +18,7 @@ import PackingChecklist from "./pages/PackingChecklist.jsx";
 import ProfileSettings from "./pages/ProfileSettings.jsx";
 import SharedItinerary from "./pages/SharedItinerary.jsx";
 import Signup from "./pages/Signup.jsx";
+import TripSummary from "./pages/TripSummary.jsx";
 
 /** Central route table — public routes + JWT-guarded app shell */
 export default function App() {
@@ -33,6 +35,8 @@ export default function App() {
       <Route element={<ProtectedAppShell />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/trips/create" element={<CreateTrip />} />
+        <Route path="/trips/:tripId/edit" element={<EditTrip />} />
+        <Route path="/trips/:tripId" element={<TripSummary />} />
         <Route path="/trips" element={<MyTrips />} />
         <Route path="/itinerary/:tripId/build" element={<ItineraryBuilder />} />
         <Route path="/itinerary/:tripId" element={<ItineraryView />} />
