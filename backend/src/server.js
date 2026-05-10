@@ -18,36 +18,43 @@ import userRoutes from "./routes/user.js";
 import tripNotesRoutes from "./routes/tripNotes.js";
 import adminRoutes from "./routes/admin.js";
 import { adminMiddleware } from "./middleware/admin.js";
+import { serverConfig } from "./config/env.js";
 import { warmupWorldCitiesIndex } from "./lib/worldCitiesSearch.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Fail fast when required env vars are missing (clearer than cryptic runtime errors)
-const requiredEnv = ["DATABASE_URL", "JWT_SECRET"];
-for (const key of requiredEnv) {
-  if (!process.env[key]) {
-    console.error(`[traveloop] Missing environment variable: ${key}`);
-    console.error("Copy backend/.env.example to backend/.env and set values.");
-    process.exit(1);
-  }
+if (!serverConfig.databaseUrl || !serverConfig.jwtSecret) {
+  console.error("[traveloop] DATABASE_URL and JWT_SECRET are required.");
+  console.error("Copy backend/.env.example to backend/.env and set values.");
+  process.exit(1);
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Allow frontend origin(s) — Vite default + optional env
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+if (serverConfig.trustProxy) {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   cors({
-    origin: corsOrigin.split(",").map((s) => s.trim()),
+    origin(origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (serverConfig.corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      console.warn(`[traveloop] CORS blocked origin: ${origin}`);
+      return callback(null, false);
+    },
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, service: "traveloop-api" });
+  res.json({ ok: true, service: "traveloop-api", env: serverConfig.nodeEnv });
 });
 
 app.use("/api/auth", authRoutes);
@@ -64,12 +71,11 @@ app.use("/api/itineraries", itinerariesRoutes);
 app.use("/api/stops", stopsRoutes);
 app.use("/api/activities", activitiesRoutes);
 
-// 404 for unknown API routes
 app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Not found" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Traveloop API listening on http://localhost:${PORT}`);
+app.listen(serverConfig.port, () => {
+  console.log(`Traveloop API listening on port ${serverConfig.port} (${serverConfig.nodeEnv})`);
   setImmediate(() => warmupWorldCitiesIndex());
 });

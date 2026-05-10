@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Calendar, MapPin, Sparkles } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { tripsApi } from "../lib/api.js";
+import { getErrorMessage } from "../lib/httpClient.js";
 import { formatTripRange } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { Badge } from "../components/ui/Badge.jsx";
-import { Spinner } from "../components/ui/Spinner.jsx";
+import { PageSkeleton } from "../components/ui/Skeleton.jsx";
 
 /** Home dashboard — trips from API */
 export default function Dashboard() {
@@ -24,7 +25,7 @@ export default function Dashboard() {
       const data = await tripsApi.list({ filter: "upcoming" });
       setTrips((data.trips || []).slice(0, 6));
     } catch (e) {
-      setError(e.message || "Could not load trips");
+      setError(getErrorMessage(e, "Could not load trips"));
       setTrips([]);
     } finally {
       setLoading(false);
@@ -67,8 +68,8 @@ export default function Dashboard() {
           </div>
 
           {loading ? (
-            <div className="mt-8 flex justify-center py-8">
-              <Spinner className="scale-125" label="Loading trips" />
+            <div className="mt-6">
+              <PageSkeleton />
             </div>
           ) : (
             <ul className="mt-6 space-y-3">

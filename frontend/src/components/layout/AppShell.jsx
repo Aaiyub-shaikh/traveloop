@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
+import { SkipLink } from "../common/SkipLink.jsx";
 import { Navbar } from "./Navbar.jsx";
 import { Sidebar } from "./Sidebar.jsx";
 
@@ -11,6 +12,7 @@ export function AppShell() {
 
   return (
     <div className="relative min-h-screen travel-gradient dark:travel-gradient-dark">
+      <SkipLink />
       <Navbar showMenu onMenuClick={() => setSidebarOpen(true)} />
 
       <div className="mx-auto flex max-w-[1600px]">
@@ -36,7 +38,11 @@ export function AppShell() {
           <Sidebar onNavigate={() => setSidebarOpen(false)} />
         </div>
 
-        <main className="min-h-[calc(100vh-4rem)] flex-1 px-4 py-8 sm:px-6 lg:px-10">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="page-enter min-h-[calc(100vh-4rem)] flex-1 px-4 py-8 sm:px-6 lg:px-10"
+        >
           <Outlet />
         </main>
       </div>

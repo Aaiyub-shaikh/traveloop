@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Calendar, FileText, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { tripNotesApi, tripsApi } from "../lib/api.js";
+import { formatJournalDayHeading } from "../lib/tripUtils.js";
 import { useToast } from "../contexts/ToastContext.jsx";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Card } from "../components/ui/Card.jsx";
@@ -24,12 +25,6 @@ function todayLocalInput() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function formatDayHeading(dayKey) {
-  const [y, mo, da] = dayKey.split("-").map(Number);
-  const d = new Date(Date.UTC(y, mo - 1, da, 12, 0, 0));
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 }
 
 function formatTs(iso) {
@@ -298,7 +293,7 @@ export default function NotesJournal() {
               <div className="flex items-center gap-2 border-b border-slate-200 pb-2 dark:border-slate-700">
                 <Calendar className="h-5 w-5 text-brand-500" />
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-400">
-                  {formatDayHeading(dayKey)}
+                  {formatJournalDayHeading(dayKey)}
                 </h3>
               </div>
               <ul className="space-y-3">

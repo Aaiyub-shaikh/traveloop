@@ -141,6 +141,7 @@ Create a `.env` file inside the backend folder.
 ```env
 DATABASE_URL=your_postgresql_database_url
 JWT_SECRET=your_secret_key
+ADMIN_EMAILS=admin_email_@gmail.com
 PORT=5000
 ```
 

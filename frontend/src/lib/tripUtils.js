@@ -1,3 +1,25 @@
+/** Stable day bucket for itinerary grouping (Canada locale = YYYY-MM-DD sortable) */
+export function dayKeyFromIso(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-CA");
+}
+
+/** Long weekday heading for a stop’s calendar day */
+export function formatStopDayHeading(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+}
+
+/** Journal timeline heading from YYYY-MM-DD (UTC noon interpretation) */
+export function formatJournalDayHeading(yyyyMmDd) {
+  if (!yyyyMmDd || typeof yyyyMmDd !== "string") return "";
+  const [y, mo, da] = yyyyMmDd.split("-").map(Number);
+  if (!y || !mo || !da) return yyyyMmDd;
+  const d = new Date(Date.UTC(y, mo - 1, da, 12, 0, 0));
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+}
+
 /** Format ISO date string for display in local timezone */
 export function formatTripDate(isoString) {
   if (!isoString) return "";

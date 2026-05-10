@@ -2,17 +2,15 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CalendarDays, PenLine, Share2 } from "lucide-react";
 import { itineraryApi, tripsApi } from "../lib/api.js";
-import { formatTripRange } from "../lib/tripUtils.js";
+import { getErrorMessage } from "../lib/httpClient.js";
+import { dayKeyFromIso, formatStopDayHeading, formatTripRange } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
-import { PageLoader } from "../components/ui/Spinner.jsx";
+import { PageSkeleton } from "../components/ui/Skeleton.jsx";
+import { QueryErrorPanel } from "../components/common/QueryErrorPanel.jsx";
 import { ShareTripModal } from "../components/trips/ShareTripModal.jsx";
 import { DayDivider } from "../components/itinerary/DayDivider.jsx";
-
-function dayKey(iso) {
-  return new Date(iso).toLocaleDateString("en-CA");
-}
 
 /** Read-only itinerary — uses saved itinerary when present */
 export default function ItineraryView() {
@@ -31,7 +29,7 @@ export default function ItineraryView() {
       setTrip(tData.trip);
       setItinerary(iData.itinerary);
     } catch (e) {
-      setError(e.message || "Could not load trip");
+      setError(getErrorMessage(e, "Could not load trip"));
       setTrip(null);
       setItinerary(null);
     } finally {
@@ -49,7 +47,7 @@ export default function ItineraryView() {
   }, [itinerary]);
 
   if (loading) {
-    return <PageLoader message="Loading itinerary..." />;
+    return <PageSkeleton />;
   }
 
   const title = trip?.title ?? "Trip";
@@ -76,14 +74,7 @@ export default function ItineraryView() {
         }
       />
 
-      {error && (
-        <Card className="mb-6 border-red-200 bg-red-50/80 dark:border-red-900/40 dark:bg-red-950/30">
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-          <Button type="button" className="mt-3" variant="secondary" onClick={load}>
-            Retry
-          </Button>
-        </Card>
-      )}
+      {error && <QueryErrorPanel className="mb-6" error={error} onRetry={load} title="Could not load itinerary" />}
 
       <Card className="mb-8 flex flex-wrap items-center gap-6 border-brand-200/50 dark:border-brand-800/40">
         <CalendarDays className="h-10 w-10 text-brand-500" />
@@ -115,21 +106,12 @@ export default function ItineraryView() {
         <div className="space-y-6">
           {sortedStops.map((stop, idx) => {
             const prev = sortedStops[idx - 1];
-            const showDay = !prev || dayKey(prev.startDate) !== dayKey(stop.startDate);
+            const showDay = !prev || dayKeyFromIso(prev.startDate) !== dayKeyFromIso(stop.startDate);
             const city = stop.city;
             const acts = [...(stop.activities || [])].sort((a, b) => a.sortOrder - b.sortOrder);
             return (
               <Fragment key={stop.id}>
-                {showDay && (
-                  <DayDivider
-                    label={new Date(stop.startDate).toLocaleDateString(undefined, {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  />
-                )}
+                {showDay && <DayDivider label={formatStopDayHeading(stop.startDate)} />}
                 <Card>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>

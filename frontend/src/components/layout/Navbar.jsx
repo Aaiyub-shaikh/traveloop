@@ -48,7 +48,8 @@ export function Navbar({ onMenuClick, showMenu }) {
             type="button"
             onClick={toggle}
             className="rounded-xl px-3 py-2 text-xs font-medium text-slate-600 hover:bg-white/70 dark:text-slate-400 dark:hover:bg-slate-800/70"
-            title="Toggle theme"
+            title="Toggle color theme"
+            aria-label="Toggle light and dark theme"
           >
             Theme
           </button>

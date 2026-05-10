@@ -1,82 +1,15 @@
 /**
- * API base URL: empty string uses same-origin `/api` (Vite proxy in dev).
- * Set VITE_API_URL for direct backend calls if needed.
+ * Domain API clients — HTTP via httpClient (single place for errors & base URL)
  */
-const BASE = import.meta.env.VITE_API_URL ?? "";
+import { apiFetch, apiUpload } from "./httpClient.js";
 
-function getStoredToken() {
-  return localStorage.getItem("traveloop_token");
-}
-
-/**
- * JSON fetch helper with optional Bearer token
- */
-export async function apiFetch(path, options = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-  const token = getStoredToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-  });
-
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { message: text || "Invalid response" };
-  }
-
-  if (!res.ok) {
-    const err = new Error(data?.message || res.statusText || "Request failed");
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-
-  return data;
-}
+export { apiFetch, apiUpload, ApiError, getErrorMessage } from "./httpClient.js";
 
 export const authApi = {
   register: (body) => apiFetch("/api/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body) => apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify(body) }),
   me: () => apiFetch("/api/auth/me"),
 };
-
-/** Multipart upload (do not set Content-Type) */
-export async function apiUpload(path, formData) {
-  const headers = {};
-  const token = getStoredToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    body: formData,
-    headers,
-  });
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { message: text || "Invalid response" };
-  }
-  if (!res.ok) {
-    const err = new Error(data?.message || res.statusText || "Upload failed");
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-}
 
 export const adminApi = {
   analytics: () => apiFetch("/api/admin/analytics"),
@@ -113,7 +46,6 @@ export const tripNotesApi = {
     apiFetch(`/api/trips/${encodeURIComponent(tripId)}/notes/${encodeURIComponent(noteId)}`, { method: "DELETE" }),
 };
 
-/** Trip CRUD — requires Bearer token (stored after login) */
 export const tripsApi = {
   list: (params = {}) => {
     const q = new URLSearchParams();
@@ -128,7 +60,6 @@ export const tripsApi = {
   remove: (id) => apiFetch(`/api/trips/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
-/** Public share link management + duplicate (auth) */
 export const shareApi = {
   get: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/share`),
   create: (tripId, body = {}) =>
@@ -137,7 +68,6 @@ export const shareApi = {
   duplicateTrip: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/duplicate`, { method: "POST" }),
 };
 
-/** Shared itinerary (GET is public; copy requires auth) */
 export const publicShareApi = {
   getItinerary: (token) => apiFetch(`/api/public/itinerary/${encodeURIComponent(token)}`),
   copyToMyTrips: (token) =>
@@ -156,9 +86,7 @@ export const packingApi = {
 };
 
 export const citiesApi = {
-  /** Cities persisted in DB (featured + created from stops) */
   list: () => apiFetch("/api/cities"),
-  /** Worldwide search — requires q length ≥ 2 on server */
   search: (q, limit = 50) => {
     const params = new URLSearchParams();
     if (q != null && q !== "") params.set("q", q);
@@ -167,7 +95,6 @@ export const citiesApi = {
   },
 };
 
-/** Mock explore catalog — static JSON on server */
 export const exploreApi = {
   citiesMeta: () => apiFetch("/api/explore/cities/meta"),
   cities: (params = {}) => {
@@ -201,7 +128,6 @@ export const budgetApi = {
     }),
 };
 
-/** Itinerary & builder — all routes require JWT */
 export const itineraryApi = {
   getForTrip: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/itinerary`),
   createForTrip: (tripId) => apiFetch(`/api/trips/${encodeURIComponent(tripId)}/itinerary`, { method: "POST" }),

@@ -3,14 +3,10 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { CalendarDays, CheckCircle2, Copy, Loader2, Share2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { publicShareApi } from "../lib/api.js";
-import { formatTripRange } from "../lib/tripUtils.js";
+import { dayKeyFromIso, formatStopDayHeading, formatTripRange } from "../lib/tripUtils.js";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { DayDivider } from "../components/itinerary/DayDivider.jsx";
-
-function dayKey(iso) {
-  return new Date(iso).toLocaleDateString("en-CA");
-}
 
 /** Public read-only itinerary — token in URL; copy requires login */
 export default function SharedItinerary() {
@@ -170,21 +166,12 @@ export default function SharedItinerary() {
         <div className="space-y-6">
           {sortedStops.map((stop, idx) => {
             const prev = sortedStops[idx - 1];
-            const showDay = !prev || dayKey(prev.startDate) !== dayKey(stop.startDate);
+            const showDay = !prev || dayKeyFromIso(prev.startDate) !== dayKeyFromIso(stop.startDate);
             const city = stop.city;
             const acts = [...(stop.activities || [])].sort((a, b) => a.sortOrder - b.sortOrder);
             return (
               <Fragment key={stop.id}>
-                {showDay && (
-                  <DayDivider
-                    label={new Date(stop.startDate).toLocaleDateString(undefined, {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  />
-                )}
+                {showDay && <DayDivider label={formatStopDayHeading(stop.startDate)} />}
                 <Card>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>

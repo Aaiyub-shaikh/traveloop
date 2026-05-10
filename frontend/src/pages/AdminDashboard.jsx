@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   BarChart,
@@ -21,8 +20,8 @@ import {
   Users,
   Loader2,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext.jsx";
 import { adminApi } from "../lib/api.js";
+import { getErrorMessage } from "../lib/httpClient.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { Badge } from "../components/ui/Badge.jsx";
@@ -31,7 +30,6 @@ import { Button } from "../components/ui/Button.jsx";
 const chartAxis = { stroke: "currentColor", fontSize: 11 };
 
 export default function AdminDashboard() {
-  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,7 +41,7 @@ export default function AdminDashboard() {
       const res = await adminApi.analytics();
       setData(res);
     } catch (e) {
-      setError(e.message || "Could not load analytics");
+      setError(getErrorMessage(e, "Could not load analytics"));
       setData(null);
     } finally {
       setLoading(false);
@@ -51,25 +49,8 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!user?.isAdmin) {
-      setLoading(false);
-      return;
-    }
     load();
-  }, [user?.isAdmin, load]);
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center gap-2 text-slate-600 dark:text-slate-400">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
-        Loading…
-      </div>
-    );
-  }
-
-  if (!user?.isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  }, [load]);
 
   const fmtMoney = (n) =>
     new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -89,6 +70,8 @@ export default function AdminDashboard() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge tone="success">Admin</Badge>
         <span className="text-sm text-slate-600 dark:text-slate-400">
+          Grant access with <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">User.isAdmin</code> or{" "}
+          <code className="rounded bg-slate-100 px-1 dark:bg-slate-800">ADMIN_EMAILS</code> in backend env.
         </span>
       </div>
 

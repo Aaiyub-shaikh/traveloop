@@ -11,7 +11,7 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Map as MapIcon, Share2 } from "lucide-react";
 import { itineraryApi, tripsApi } from "../lib/api.js";
-import { formatTripRange, toDateInputValue } from "../lib/tripUtils.js";
+import { dayKeyFromIso, formatStopDayHeading, formatTripRange, toDateInputValue } from "../lib/tripUtils.js";
 import { PageHeader } from "../components/PageHeader.jsx";
 import { Button } from "../components/ui/Button.jsx";
 import { Card } from "../components/ui/Card.jsx";
@@ -21,10 +21,6 @@ import { DayDivider } from "../components/itinerary/DayDivider.jsx";
 import { SortableStopRow } from "../components/itinerary/SortableStopRow.jsx";
 import { AddStopForm } from "../components/itinerary/AddStopForm.jsx";
 import { ShareTripModal } from "../components/trips/ShareTripModal.jsx";
-
-function dayKey(iso) {
-  return new Date(iso).toLocaleDateString("en-CA");
-}
 
 export default function ItineraryBuilder() {
   const { tripId } = useParams();
@@ -301,10 +297,10 @@ export default function ItineraryBuilder() {
                   ) : (
                     sortedStops.map((stop, idx) => {
                       const prev = sortedStops[idx - 1];
-                      const showDay = !prev || dayKey(prev.startDate) !== dayKey(stop.startDate);
+                      const showDay = !prev || dayKeyFromIso(prev.startDate) !== dayKeyFromIso(stop.startDate);
                       return (
                         <Fragment key={stop.id}>
-                          {showDay && <DayDivider label={formatDayHeading(stop.startDate)} />}
+                          {showDay && <DayDivider label={formatStopDayHeading(stop.startDate)} />}
                           <SortableStopRow
                             stop={stop}
                             activityDraft={activityDraft}
@@ -340,7 +336,3 @@ export default function ItineraryBuilder() {
   );
 }
 
-function formatDayHeading(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-}
