@@ -6,7 +6,7 @@ This project was developed as part of a hackathon selection challenge with the g
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Authentication
 - User Signup & Login
